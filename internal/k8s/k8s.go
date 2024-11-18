@@ -9,6 +9,9 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 )
 
+var client, _ = GetClient()
+var clientAutoscaling, _ = GetAutoscalerClient()
+
 func GetClient() (*kubernetes.Clientset, error) {
 	config, err := getClientConfig()
 	if err != nil {
@@ -22,12 +25,13 @@ func GetAutoscalerClient() (*autoscalingv1beta2.Clientset, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	return autoscalingv1beta2.NewForConfig(config)
 }
 
 func getClientConfig() (*rest.Config, error) {
 	if !isRunningInContainer() {
-		return clientcmd.BuildConfigFromFlags("", "/Users/digode/.kube/kubeconfig")
+		return clientcmd.BuildConfigFromFlags("", "/Users/digode/.kube/config")
 	}
 
 	return rest.InClusterConfig()
