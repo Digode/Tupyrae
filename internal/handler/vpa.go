@@ -3,6 +3,7 @@ package handler
 import (
 	"Tupyrae/internal/k8s"
 	"fmt"
+	"math"
 
 	v1 "k8s.io/api/core/v1"
 	vpav1 "k8s.io/autoscaler/vertical-pod-autoscaler/pkg/apis/autoscaling.k8s.io/v1"
@@ -52,14 +53,17 @@ func deployAdjust(vpa *vpav1.VerticalPodAutoscaler) {
 					klog.Infof("Adjusting %s/%s: %v %v", vpa.Namespace, r.ContainerName, r.LowerBound, r.UpperBound)
 
 					updatedC := c.DeepCopy()
-					if r.LowerBound != nil {
+					if r.LowerBound != nil && willAdjust(true, &c.Resources.Requests, &r.LowerBound) {
 						updatedC.Resources.Requests = *&r.LowerBound
+						updated = true
 					}
-					if r.UpperBound != nil {
+					if r.UpperBound != nil && willAdjust(false, &c.Resources.Limits, &r.UpperBound) {
 						updatedC.Resources.Limits = *&r.UpperBound
+						updated = true
 					}
-					deploy.Spec.Template.Spec.Containers[i] = *updatedC
-					updated = true
+					if updated {
+						deploy.Spec.Template.Spec.Containers[i] = *updatedC
+					}
 				}
 			}
 		}
@@ -91,14 +95,17 @@ func cronjobAdjust(vpa *vpav1.VerticalPodAutoscaler) {
 					klog.Infof("Adjusting %s/%s: %v %v", vpa.Namespace, r.ContainerName, r.LowerBound, r.UpperBound)
 
 					updatedC := c.DeepCopy()
-					if r.LowerBound != nil {
+					if r.LowerBound != nil && willAdjust(true, &c.Resources.Requests, &r.LowerBound) {
 						updatedC.Resources.Requests = *&r.LowerBound
+						updated = true
 					}
-					if r.UpperBound != nil {
+					if r.UpperBound != nil && willAdjust(false, &c.Resources.Limits, &r.UpperBound) {
 						updatedC.Resources.Limits = *&r.UpperBound
+						updated = true
 					}
-					cronjob.Spec.JobTemplate.Spec.Template.Spec.Containers[i] = *updatedC
-					updated = true
+					if updated {
+						cronjob.Spec.JobTemplate.Spec.Template.Spec.Containers[i] = *updatedC
+					}
 				}
 			}
 		}
@@ -120,15 +127,36 @@ func willAdjust(request bool, resource *v1.ResourceList, vpa *v1.ResourceList) b
 	}
 
 	if request {
-		if request && resource.Cpu() != vpa.Cpu() {
+		if request && resource.Cpu().MilliValue() != vpa.Cpu().MilliValue() {
 			return true
 		}
-		if !request && resource.Memory() != vpa.Memory() {
+
+		if !request && resource.Memory().MilliValue() != vpa.Memory().MilliValue() {
 			return true
 		}
 	} else {
-
+		if outOfLimit(resource.Cpu().MilliValue(), vpa.Cpu().MilliValue()) {
+			return true
+		}
+		if outOfLimit(resource.Memory().MilliValue(), vpa.Memory().MilliValue()) {
+			return true
+		}
 	}
 
+	return false
+}
+
+func outOfLimit(resourceValue int64, vpaValue int64) bool {
+	diff := 0.0
+	if vpaValue > resourceValue {
+		diff = float64(resourceValue) / float64(vpaValue)
+	} else {
+		diff = float64(vpaValue) / float64(resourceValue)
+	}
+	porc := 1 - diff
+	// Check if the difference is greater than 10%
+	if math.Abs(porc) > 0.1 {
+		return true
+	}
 	return false
 }
