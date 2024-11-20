@@ -9,7 +9,7 @@ import (
 )
 
 func GetVpa(namespace string, name string) (*v1.VerticalPodAutoscaler, error) {
-	vpas, err := clientAutoscaling.AutoscalingV1().VerticalPodAutoscalers(namespace).Get(context.TODO(), name, metav1.GetOptions{})
+	vpas, err := GetAutoscalerClient().AutoscalingV1().VerticalPodAutoscalers(namespace).Get(context.TODO(), name, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
 	}
@@ -17,7 +17,7 @@ func GetVpa(namespace string, name string) (*v1.VerticalPodAutoscaler, error) {
 }
 
 func GetVpas(namespace string) ([]v1.VerticalPodAutoscaler, error) {
-	vpas, err := clientAutoscaling.AutoscalingV1().VerticalPodAutoscalers(namespace).List(context.TODO(), metav1.ListOptions{})
+	vpas, err := GetAutoscalerClient().AutoscalingV1().VerticalPodAutoscalers(namespace).List(context.TODO(), metav1.ListOptions{})
 
 	if err != nil {
 		return nil, err
@@ -28,7 +28,7 @@ func GetVpas(namespace string) ([]v1.VerticalPodAutoscaler, error) {
 func CreateVpa(vpa *v1.VerticalPodAutoscaler) (*v1.VerticalPodAutoscaler, error) {
 	klog.Infof("Creating VPA %s", vpa.Name)
 
-	vpa, err := clientAutoscaling.AutoscalingV1().VerticalPodAutoscalers(vpa.Namespace).Create(context.TODO(), vpa, metav1.CreateOptions{})
+	vpa, err := GetAutoscalerClient().AutoscalingV1().VerticalPodAutoscalers(vpa.Namespace).Create(context.TODO(), vpa, metav1.CreateOptions{})
 	if err != nil {
 		return nil, err
 	}

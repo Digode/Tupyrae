@@ -1,0 +1,16 @@
+{{- if .Values.serviceAccount.create -}}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ include "tupyrae.fullname" . }}
+  labels:
+  {{- include "tupyrae.labels" . | nindent 4 }}
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "tupyrae.serviceAccountName" . }}
+    namespace: {{ .Release.Namespace }}
+roleRef:
+    kind: ClusterRole
+    name: {{ include "tupyrae.fullname" . }}
+    apiGroup: rbac.authorization.k8s.io
+{{- end -}}

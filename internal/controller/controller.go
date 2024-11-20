@@ -31,17 +31,17 @@ type ResourceWatcher struct {
 }
 
 func Watcher() {
-	klog.Infof("Starting ControllerRun.")
+	klog.Infof("Starting Controller...")
 
 	stop := make(chan bool)
-	// ns := NsWatcher(stop)
+	ns := NsWatcher(stop)
 	vpa := VpaWatcher(stop)
 	// deploy := DeployWatcher(stop)
 	// cronjob := CronjobWatcher(stop)
 
 	stopCh := make(chan struct{})
 
-	// ns.Watch(stopCh)
+	ns.Watch(stopCh)
 	vpa.Watch(stopCh)
 
 	// go deploy.Watch(stopCh)
@@ -54,19 +54,17 @@ func Watcher() {
 }
 
 func NsWatcher(stop <-chan bool) *ResourceWatcher {
-	klog.Infof("Starting ControllerRun.")
+	klog.Infof("Starting NsWatcher...")
 
-	clientset, err := k8s.GetClient()
-	if err != nil {
-		klog.Fatalf("Error getting clientset: %v", err)
-	}
-
+	clientset := k8s.GetClient()
 	informer := cache.NewSharedIndexInformer(
 		&cache.ListWatch{
 			ListFunc: func(options metav1.ListOptions) (runtimeobj.Object, error) {
+				klog.Infof("ListFunc NS...")
 				return clientset.CoreV1().Namespaces().List(context.Background(), options)
 			},
 			WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
+				klog.Infof("WatchFunc NS...")
 				return clientset.CoreV1().Namespaces().Watch(context.Background(), options)
 			},
 		},
@@ -85,13 +83,9 @@ func NsWatcher(stop <-chan bool) *ResourceWatcher {
 }
 
 func DeployWatcher(stop <-chan bool) *ResourceWatcher {
-	klog.Infof("Starting ControllerRun.")
+	klog.Infof("Starting DeployWatcher...")
 
-	clientset, err := k8s.GetClient()
-	if err != nil {
-		klog.Fatalf("Error getting clientset: %v", err)
-	}
-
+	clientset := k8s.GetClient()
 	informer := cache.NewSharedIndexInformer(
 		&cache.ListWatch{
 			ListFunc: func(options metav1.ListOptions) (runtimeobj.Object, error) {
@@ -116,13 +110,9 @@ func DeployWatcher(stop <-chan bool) *ResourceWatcher {
 }
 
 func CronjobWatcher(stop <-chan bool) *ResourceWatcher {
-	klog.Infof("Starting ControllerRun.")
+	klog.Infof("Starting CronjobWatcher...")
 
-	clientset, err := k8s.GetClient()
-	if err != nil {
-		klog.Fatalf("Error getting clientset: %v", err)
-	}
-
+	clientset := k8s.GetClient()
 	informer := cache.NewSharedIndexInformer(
 		&cache.ListWatch{
 			ListFunc: func(options metav1.ListOptions) (runtimeobj.Object, error) {
@@ -147,19 +137,17 @@ func CronjobWatcher(stop <-chan bool) *ResourceWatcher {
 }
 
 func VpaWatcher(stop <-chan bool) *ResourceWatcher {
-	klog.Infof("Starting ControllerRun.")
+	klog.Infof("Starting VpaWatcher...")
 
-	clientset, err := k8s.GetAutoscalerClient()
-	if err != nil {
-		klog.Fatalf("Error getting clientset: %v", err)
-	}
-
+	clientset := k8s.GetAutoscalerClient()
 	informer := cache.NewSharedIndexInformer(
 		&cache.ListWatch{
 			ListFunc: func(options metav1.ListOptions) (runtimeobj.Object, error) {
+				klog.Infof("ListFunc VPA...")
 				return clientset.AutoscalingV1().VerticalPodAutoscalers("").List(context.Background(), options)
 			},
 			WatchFunc: func(options metav1.ListOptions) (watch.Interface, error) {
+				klog.Infof("WatchFunc VPA...")
 				return clientset.AutoscalingV1().VerticalPodAutoscalers("").Watch(context.Background(), options)
 			},
 		},
@@ -178,7 +166,7 @@ func VpaWatcher(stop <-chan bool) *ResourceWatcher {
 }
 
 func (watcher *ResourceWatcher) Watch(stopCh <-chan struct{}) {
-	klog.Infof("Starting watcher.")
+	klog.Infof("Starting watcher...")
 
 	defer watcher.queue.ShutDown()
 	defer rt.HandleCrash()
@@ -191,7 +179,7 @@ func (watcher *ResourceWatcher) Watch(stopCh <-chan struct{}) {
 		return
 	}
 
-	klog.Infof("Watcher synced.")
+	klog.Infof("Watcher synced!")
 }
 
 func (rw *ResourceWatcher) runWorker(stopCh <-chan struct{}) {
@@ -211,7 +199,7 @@ func (rw *ResourceWatcher) runWorker(stopCh <-chan struct{}) {
 
 	go rw.informer.Run(stopCh)
 	if !cache.WaitForCacheSync(stopCh, rw.informer.HasSynced) {
-		klog.Fatalf("Fail to cache sync")
+		klog.Fatalf("Fail to cache sync!")
 	}
 
 	<-stopCh

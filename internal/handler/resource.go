@@ -7,7 +7,6 @@ import (
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	vpav1 "k8s.io/autoscaler/vertical-pod-autoscaler/pkg/apis/autoscaling.k8s.io/v1"
-	"k8s.io/klog/v2"
 )
 
 type Requirement struct {
@@ -24,7 +23,6 @@ type Resource struct {
 }
 
 func Checker(r *Resource) error {
-	klog.Infof("%s %s: %s/%s", r.Action, r.Kind, r.Namespace, r.Name)
 	switch r.Kind {
 	case "Deployment":
 		if _, ok := r.Item.(*appsv1.Deployment); !ok {

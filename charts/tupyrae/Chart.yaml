@@ -1,0 +1,11 @@
+apiVersion: v2
+name: tupyrae
+description: Set requests and limits for all containers in a namespace based on usage with the Kubernetes Vertical Pod Autoscaler
+type: application
+version: 0.1.0
+appVersion: "1.16.0"
+
+dependencies:
+  - name: vpa
+    version: 4.7.1
+    repository: https://charts.fairwinds.com/stable

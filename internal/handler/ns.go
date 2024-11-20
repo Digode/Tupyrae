@@ -19,8 +19,6 @@ const (
 )
 
 func NsRun(r Resource) error {
-	klog.Infof("Starting ControllerRun.")
-
 	if _, ok := r.Item.(*corev1.Namespace); !ok {
 		return fmt.Errorf("Item is not a Namespace")
 	}
@@ -33,10 +31,8 @@ func NsRun(r Resource) error {
 
 func checkNamespace(namespace *corev1.Namespace) {
 	if namespace.Labels[key] == val {
-		klog.Infof("Namespace %s is Tupyrae.", namespace.Name)
 		vpas := mapperVpa(namespace)
 		for _, deploy := range k8s.GetDeploys(namespace.Name) {
-			klog.Infof("Deployment %s", deploy.Name)
 			key := getKey(deploy)
 			if _, ok := vpas[key]; !ok {
 				createVpaByDeployment(deploy)
@@ -44,7 +40,6 @@ func checkNamespace(namespace *corev1.Namespace) {
 		}
 
 		for _, cron := range k8s.GetCronJobs(namespace.Name) {
-			klog.Infof("CronJob %s", cron.Name)
 			key := getKey(cron)
 			if _, ok := vpas[key]; !ok {
 				createVpaByCronJob(cron)

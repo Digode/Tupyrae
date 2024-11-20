@@ -9,24 +9,40 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 )
 
-var client, _ = GetClient()
-var clientAutoscaling, _ = GetAutoscalerClient()
+var client *kubernetes.Clientset
+var clientAutoscaling *autoscalingv1beta2.Clientset
 
-func GetClient() (*kubernetes.Clientset, error) {
-	config, err := getClientConfig()
-	if err != nil {
-		return nil, err
+func GetClient() *kubernetes.Clientset {
+	if client == nil {
+		config, err := getClientConfig()
+		if err != nil {
+			return nil
+		}
+		cli, err := kubernetes.NewForConfig(config)
+		if err != nil {
+			return nil
+		}
+
+		client = cli
 	}
-	return kubernetes.NewForConfig(config)
+	return client
 }
 
-func GetAutoscalerClient() (*autoscalingv1beta2.Clientset, error) {
-	config, err := getClientConfig()
-	if err != nil {
-		return nil, err
+func GetAutoscalerClient() *autoscalingv1beta2.Clientset {
+	if clientAutoscaling == nil {
+		config, err := getClientConfig()
+		if err != nil {
+			return nil
+		}
+
+		cli, err := autoscalingv1beta2.NewForConfig(config)
+		if err != nil {
+			return nil
+		}
+		clientAutoscaling = cli
 	}
 
-	return autoscalingv1beta2.NewForConfig(config)
+	return clientAutoscaling
 }
 
 func getClientConfig() (*rest.Config, error) {

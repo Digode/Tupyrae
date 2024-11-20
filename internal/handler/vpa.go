@@ -11,8 +11,6 @@ import (
 )
 
 func VpaRun(r Resource) error {
-	klog.Infof("Starting ControllerRun.")
-
 	if _, ok := r.Item.(*vpav1.VerticalPodAutoscaler); !ok {
 		return fmt.Errorf("Item is not a VPA")
 	}
@@ -24,8 +22,6 @@ func VpaRun(r Resource) error {
 }
 
 func checkVpa(vpa *vpav1.VerticalPodAutoscaler) {
-	klog.Infof("VPA %s", vpa.Name)
-
 	switch vpa.Spec.TargetRef.Kind {
 	case "Deployment":
 		deployAdjust(vpa)
@@ -37,11 +33,9 @@ func checkVpa(vpa *vpav1.VerticalPodAutoscaler) {
 }
 
 func deployAdjust(vpa *vpav1.VerticalPodAutoscaler) {
-	klog.Infof("Adjusting Deployment %s/%s", vpa.Namespace, vpa.Spec.TargetRef.Name)
-
 	deploy, err := k8s.GetDeploy(vpa.Namespace, vpa.Spec.TargetRef.Name)
 	if err != nil {
-		klog.Errorf("Error getting Deployment: %v", err)
+		klog.Error(err)
 		return
 	}
 
@@ -50,8 +44,6 @@ func deployAdjust(vpa *vpav1.VerticalPodAutoscaler) {
 		for i, c := range deploy.Spec.Template.Spec.Containers {
 			if c.Name == r.ContainerName {
 				if r.LowerBound != nil || r.UpperBound != nil {
-					klog.Infof("Adjusting %s/%s: %v %v", vpa.Namespace, r.ContainerName, r.LowerBound, r.UpperBound)
-
 					updatedC := c.DeepCopy()
 					if r.LowerBound != nil && willAdjust(true, &c.Resources.Requests, &r.LowerBound) {
 						updatedC.Resources.Requests = *&r.LowerBound
@@ -70,20 +62,19 @@ func deployAdjust(vpa *vpav1.VerticalPodAutoscaler) {
 	}
 
 	if updated {
+		klog.Infof("Adjusting Deploy %s/%s: %v %v", vpa.Namespace, vpa.Spec.TargetRef.Name, vpa.Status.Recommendation.ContainerRecommendations[0].LowerBound, vpa.Status.Recommendation.ContainerRecommendations[0].UpperBound)
 		_, err := k8s.UpdateDeploy(deploy)
 		if err != nil {
-			klog.Errorf("Error updating Deployment: %v", err)
+			klog.Error(err)
 			return
 		}
 	}
 }
 
 func cronjobAdjust(vpa *vpav1.VerticalPodAutoscaler) {
-	klog.Infof("Adjusting CronJob %s", vpa.Name)
-
 	cronjob, err := k8s.GetCronJob(vpa.Namespace, vpa.Spec.TargetRef.Name)
 	if err != nil {
-		klog.Errorf("Error getting CronJob: %v", err)
+		klog.Error(err)
 		return
 	}
 
@@ -92,8 +83,6 @@ func cronjobAdjust(vpa *vpav1.VerticalPodAutoscaler) {
 		for i, c := range cronjob.Spec.JobTemplate.Spec.Template.Spec.Containers {
 			if c.Name == r.ContainerName {
 				if r.LowerBound != nil || r.UpperBound != nil {
-					klog.Infof("Adjusting %s/%s: %v %v", vpa.Namespace, r.ContainerName, r.LowerBound, r.UpperBound)
-
 					updatedC := c.DeepCopy()
 					if r.LowerBound != nil && willAdjust(true, &c.Resources.Requests, &r.LowerBound) {
 						updatedC.Resources.Requests = *&r.LowerBound
@@ -112,6 +101,7 @@ func cronjobAdjust(vpa *vpav1.VerticalPodAutoscaler) {
 	}
 
 	if updated {
+		klog.Infof("Adjusting %s/%s: %v %v", vpa.Namespace, vpa.Spec.TargetRef.Name, vpa.Status.Recommendation.ContainerRecommendations[0].LowerBound, vpa.Status.Recommendation.ContainerRecommendations[0].UpperBound)
 		_, err := k8s.UpdateCronJob(cronjob)
 		if err != nil {
 			klog.Errorf("Error updating CronJob: %v", err)

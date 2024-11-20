@@ -9,7 +9,7 @@ import (
 )
 
 func GetCronJobs(namespace string) []batchv1.CronJob {
-	resp, err := client.BatchV1().CronJobs(namespace).List(context.TODO(), metav1.ListOptions{})
+	resp, err := GetClient().BatchV1().CronJobs(namespace).List(context.TODO(), metav1.ListOptions{})
 	if err != nil {
 		klog.Errorf("Error getting CronJobs: %v", err)
 		return nil
@@ -19,9 +19,10 @@ func GetCronJobs(namespace string) []batchv1.CronJob {
 }
 
 func GetCronJob(namespace, name string) (*batchv1.CronJob, error) {
-	return client.BatchV1().CronJobs(namespace).Get(context.TODO(), name, metav1.GetOptions{})
+	return GetClient().BatchV1().CronJobs(namespace).Get(context.TODO(), name, metav1.GetOptions{})
 }
 
 func UpdateCronJob(cronjob *batchv1.CronJob) (*batchv1.CronJob, error) {
-	return client.BatchV1().CronJobs(cronjob.Namespace).Update(context.TODO(), cronjob, metav1.UpdateOptions{})
+	klog.Infof("Updating CronJob %s", cronjob.Name)
+	return GetClient().BatchV1().CronJobs(cronjob.Namespace).Update(context.TODO(), cronjob, metav1.UpdateOptions{})
 }
