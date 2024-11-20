@@ -151,7 +151,7 @@ func VpaWatcher(stop <-chan bool) *ResourceWatcher {
 				return clientset.AutoscalingV1().VerticalPodAutoscalers("").Watch(context.Background(), options)
 			},
 		},
-		&corev1.Namespace{},
+		&autoscalerv1.VerticalPodAutoscaler{},
 		0,
 		cache.Indexers{},
 	)
