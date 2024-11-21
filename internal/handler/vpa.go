@@ -83,6 +83,10 @@ func cronjobAdjust(vpa *vpav1.VerticalPodAutoscaler) {
 	}
 
 	var updated bool = false
+	if vpa.Status.Recommendation == nil || vpa.Status.Recommendation.ContainerRecommendations == nil || len(vpa.Status.Recommendation.ContainerRecommendations) == 0 {
+		klog.Infof("No recommendation for %s/%s yet", vpa.Namespace, vpa.Spec.TargetRef.Name)
+		return
+	}
 	for _, r := range vpa.Status.Recommendation.ContainerRecommendations {
 		for i, c := range cronjob.Spec.JobTemplate.Spec.Template.Spec.Containers {
 			if c.Name == r.ContainerName {
