@@ -11,7 +11,7 @@ rules:
   verbs: ["get", "list", "watch", "update", "patch"]
 - apiGroups: ["batch"]
   resources: ["cronjobs"]
-  verbs: ["get", "list", "watch"]
+  verbs: ["get", "list", "watch", "update", "patch"]
 - apiGroups: ["autoscaling.k8s.io"]
   resources: ["verticalpodautoscalers"]
   verbs: ["get", "list", "watch", "update", "patch", "create", "delete"]

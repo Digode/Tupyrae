@@ -4,11 +4,20 @@ import (
 	"Tupyrae/internal/k8s"
 	"fmt"
 	"math"
+	"time"
 
+	"github.com/patrickmn/go-cache"
 	v1 "k8s.io/api/core/v1"
 	vpav1 "k8s.io/autoscaler/vertical-pod-autoscaler/pkg/apis/autoscaling.k8s.io/v1"
 	"k8s.io/klog"
 )
+
+const (
+	// DefaultExpiration is the default expiration time for an item in the cache
+	DefaultExpiration = 15 * time.Minute
+)
+
+var resourcesCache = cache.New(DefaultExpiration, 30*time.Minute)
 
 func VpaRun(r Resource) error {
 	if _, ok := r.Item.(*vpav1.VerticalPodAutoscaler); !ok {
@@ -21,7 +30,26 @@ func VpaRun(r Resource) error {
 	return nil
 }
 
+func keyCache(vpa *vpav1.VerticalPodAutoscaler) string {
+	return vpa.Namespace + "/" + vpa.Spec.TargetRef.Name
+}
+
+func checkCache(vpa *vpav1.VerticalPodAutoscaler) bool {
+	if _, found := resourcesCache.Get(keyCache(vpa)); found {
+		return true
+	}
+	return false
+}
+
+func setCache(vpa *vpav1.VerticalPodAutoscaler) {
+	resourcesCache.Set(keyCache(vpa), true, DefaultExpiration)
+}
+
 func checkVpa(vpa *vpav1.VerticalPodAutoscaler) {
+	if checkCache(vpa) {
+		return
+	}
+
 	switch vpa.Spec.TargetRef.Kind {
 	case "Deployment":
 		deployAdjust(vpa)
@@ -32,10 +60,22 @@ func checkVpa(vpa *vpav1.VerticalPodAutoscaler) {
 	}
 }
 
+func isIgnored(annotation map[string]string) bool {
+	if _, ok := annotation["tupyrae/ignore"]; ok {
+		return true
+	}
+	return false
+}
+
 func deployAdjust(vpa *vpav1.VerticalPodAutoscaler) {
 	deploy, err := k8s.GetDeploy(vpa.Namespace, vpa.Spec.TargetRef.Name)
 	if err != nil {
 		klog.Error(err)
+		return
+	}
+
+	if isIgnored(deploy.Annotations) {
+		klog.Infof("Ignoring %s/%s", vpa.Namespace, vpa.Spec.TargetRef.Name)
 		return
 	}
 
@@ -72,6 +112,7 @@ func deployAdjust(vpa *vpav1.VerticalPodAutoscaler) {
 			klog.Error(err)
 			return
 		}
+		setCache(vpa)
 	}
 }
 
@@ -79,6 +120,11 @@ func cronjobAdjust(vpa *vpav1.VerticalPodAutoscaler) {
 	cronjob, err := k8s.GetCronJob(vpa.Namespace, vpa.Spec.TargetRef.Name)
 	if err != nil {
 		klog.Error(err)
+		return
+	}
+
+	if isIgnored(cronjob.Annotations) {
+		klog.Infof("Ignoring %s/%s", vpa.Namespace, vpa.Spec.TargetRef.Name)
 		return
 	}
 
@@ -115,6 +161,7 @@ func cronjobAdjust(vpa *vpav1.VerticalPodAutoscaler) {
 			klog.Errorf("Error updating CronJob: %v", err)
 			return
 		}
+		setCache(vpa)
 	}
 }
 
