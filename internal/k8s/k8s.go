@@ -6,7 +6,6 @@ import (
 	autoscalingv1beta2 "k8s.io/autoscaler/vertical-pod-autoscaler/pkg/client/clientset/versioned"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
-	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/klog/v2"
 )
 
@@ -47,10 +46,10 @@ func GetAutoscalerClient() *autoscalingv1beta2.Clientset {
 }
 
 func getClientConfig() (*rest.Config, error) {
-	if !isRunningInContainer() {
-		klog.Info("Running locally, using kubeconfig")
-		return clientcmd.BuildConfigFromFlags("", "/Users/digode/.kube/config")
-	}
+	// if !isRunningInContainer() {
+	// 	klog.Info("Running locally, using kubeconfig")
+	// 	return clientcmd.BuildConfigFromFlags("", "/Users/digode/.kube/config")
+	// }
 
 	klog.Info("Running in container, using in-cluster config")
 	return rest.InClusterConfig()
