@@ -10,6 +10,7 @@ COPY . /app/
 RUN go build -o tupyrae cmd/main.go
 
 LABEL org.opencontainers.image.source=https://github.com/digode/tupyrae
+LABEL org.opencontainers.image.version=1.0.0
 
 FROM gcr.io/distroless/static@sha256:9be3fcc6abeaf985b5ecce59451acbcbb15e7be39472320c538d0d55a0834edc AS app
 COPY --from=builder /app/tupyrae /bin/tupyrae
