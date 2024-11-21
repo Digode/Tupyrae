@@ -199,8 +199,8 @@ func outOfLimit(resourceValue int64, vpaValue int64) bool {
 		diff = float64(vpaValue) / float64(resourceValue)
 	}
 	porc := 1 - diff
-	// Check if the difference is greater than 10%
-	if math.Abs(porc) > 0.1 {
+	// Check if the difference is greater than 30%
+	if math.Abs(porc) > 0.3 {
 		return true
 	}
 	return false
